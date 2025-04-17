@@ -1,0 +1,77 @@
+FROM ubuntu:22.04
+
+LABEL maintainer="DeepStream Pipeline Production"
+LABEL description="Production DeepStream Pipeline with NVIDIA DeepStream 7.1"
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONPATH=${PYTHONPATH}:/opt/nvidia/deepstream/deepstream-7.1/lib:/app
+
+# Install DeepStream prerequisites
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-dev \
+    python3-setuptools \
+    libssl3 \
+    libssl-dev \
+    libgstreamer1.0-0 \
+    gstreamer1.0-tools \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
+    libgstreamer-plugins-base1.0-dev \
+    libgstrtspserver-1.0-0 \
+    libjansson4 \
+    libyaml-cpp-dev \
+    wget \
+    git \
+    pkg-config \
+    sudo \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+# NOTE: To build this image, download the DeepStream SDK and place the .deb file in the same directory
+# Install DeepStream SDK (DeepStream 7.1)
+WORKDIR /tmp
+COPY deepstream-7.1_7.1.0-1_amd64.deb .
+RUN apt-get update && \
+    apt-get install -y ./deepstream-7.1_7.1.0-1_amd64.deb && \
+    rm deepstream-7.1_7.1.0-1_amd64.deb && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set up DeepStream environment
+ENV DEEPSTREAM_DIR=/opt/nvidia/deepstream/deepstream-7.1
+
+# Install Python dependencies
+WORKDIR /app
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt && \
+    pip3 install --no-cache-dir pycuda
+
+# Copy application files
+COPY . /app
+
+# Make scripts executable
+RUN chmod +x run_pipeline.sh convert_models_to_onnx.py validate_setup.sh
+
+# Create models directory
+RUN mkdir -p models
+
+# Create working directory for mounted volumes
+RUN mkdir -p /videos
+
+# Set up for X display (for visualization)
+ENV DISPLAY=:0
+
+# Set entry point
+ENTRYPOINT ["/app/run_pipeline.sh"]
+
+# Default command (can be overridden)
+CMD ["--help"]
+
+# NOTE: To build this image:
+# 1. Download DeepStream SDK: https://catalog.ngc.nvidia.com/orgs/nvidia/resources/deepstream
+# 2. Place deepstream-7.1_7.1.0-1_amd64.deb in the same directory as this Dockerfile
+# 3. Build: docker build -f Dockerfile.production -t deepstream-pipeline:7.1 .
+# 4. Run with GPU: docker run --gpus all -it --rm -v $(pwd):/app -v /path/to/videos:/videos deepstream-pipeline:7.1 

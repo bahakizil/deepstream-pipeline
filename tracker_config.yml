@@ -1,0 +1,34 @@
+# Tracker configuration for low level library
+target-classes:
+  - class-id: 0
+    tracker-type: NvMOT_DeepSORT
+  - class-id: 1
+    tracker-type: NvMOT_DeepSORT
+  - class-id: 2
+    tracker-type: NvMOT_DeepSORT
+  - class-id: 3
+    tracker-type: NvMOT_DeepSORT
+  - class-id: 4
+    tracker-type: NvMOT_DeepSORT
+  - class-id: 5
+    tracker-type: NvMOT_DeepSORT
+  - class-id: 6
+    tracker-type: NvMOT_DeepSORT
+  - class-id: 7
+    tracker-type: NvMOT_DeepSORT
+  - class-id: 8
+    tracker-type: NvMOT_DeepSORT
+  - class-id: 9
+    tracker-type: NvMOT_DeepSORT
+
+# NvDCF/NvKLTTracker/NvDeepSORT/NvSORT are the supported choices
+NvMOT_DeepSORT:
+  track-timeout: 10
+  gpu-id: 0
+  confidence-threshold: 0.3
+  confirm-threshold: 0.7
+  past-frames: 10
+  min-detection-confidence: 0.3
+  max-detection-age: 5
+  min-hits: 2
+  max-cost: 1.0 

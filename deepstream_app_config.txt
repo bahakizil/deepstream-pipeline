@@ -1,0 +1,204 @@
+[application]
+enable-perf-measurement=1
+perf-measurement-interval-sec=1
+gie-kitti-output-dir=streamscl
+
+[tiled-display]
+enable=1
+rows=1
+columns=1
+width=1280
+height=720
+gpu-id=0
+nvbuf-memory-type=0
+
+[source0]
+enable=1
+#Type - 1=CameraV4L2 2=URI 3=MultiURI 4=RTSP
+type=2
+uri=file://%VIDEO_PATH%
+gpu-id=0
+# Create source bin subgraph specific to this source
+create-source-bin-subcfg=1
+
+# (0): memtype_device   - Memory type Device
+# (1): memtype_pinned   - Memory type Host Pinned
+# (2): memtype_unified  - Memory type Unified
+nvbuf-memory-type=0
+
+[source0-subcfg]
+# Duplicate source streams for parallel inference
+enable=1
+
+[streammux]
+## Boolean property to inform streammux that sources in the pipeline are live
+live-source=0
+batch-size=1
+## Time out in microseconds, to wait after the first buffer is available
+## to push the batch even if the complete batch is not formed.
+batched-push-timeout=40000
+width=1280
+height=720
+## Configure streammux to generate NTP timestamps
+# enable-ntp=1
+gpu-id=0
+# (0): memtype_device   - Memory type Device
+# (1): memtype_pinned   - Memory type Host Pinned
+# (2): memtype_unified  - Memory type Unified
+nvbuf-memory-type=0
+
+[primary-gie]
+enable=1
+gpu-id=0
+gie-unique-id=1
+nvbuf-memory-type=0
+model-engine-file=models/yoloe-v8s-seg.engine
+# Use TensorRT engine if available, otherwise fallback to ONNX
+infer-on-gie-id=-1
+batch-size=1
+interval=0
+#Required by the app for OSD, not a plugin property
+bbox-border-color0=1;0;0;1
+bbox-border-color1=0;1;0;1
+bbox-border-color2=0;0;1;1
+bbox-border-color3=1;1;0;1
+gie-unique-id=1
+config-file=models/yoloe_config.txt
+
+# Enable TensorRT optimization for RTX 4070
+# Allow TensorRT to optimize with FP16 precision
+## FP16 inference for faster performance on RTX 4070
+maintain-aspect-ratio=1
+process-mode=1
+model-color-format=0
+## Recommended settings for RTX 4070 and DeepStream 7.1
+network-mode=2
+input-object-min-width=32
+input-object-min-height=32
+input-object-max-width=1920
+input-object-max-height=1080
+# DeepStream 7.1 improved TensorRT settings
+tensor-meta-pool-size=12
+# New in DeepStream 7.1 - optimal workspace size
+workspace-size=3072
+
+[secondary-gie0]
+enable=1
+gpu-id=0
+gie-unique-id=2
+nvbuf-memory-type=0
+model-engine-file=models/rfdetr.engine
+batch-size=1
+gie-unique-id=2
+operate-on-gie-id=1
+operate-on-class-ids=0;
+config-file=models/rfdetr_config.txt
+
+# Enable TensorRT optimization for DeepStream 7.1
+network-mode=2
+input-object-min-width=32
+input-object-min-height=32
+input-object-max-width=1920
+input-object-max-height=1080
+tensor-meta-pool-size=12
+workspace-size=3072
+
+[tracker]
+enable=1
+tracker-width=640
+tracker-height=384
+gpu-id=0
+# Updated path for DeepStream 7.1
+ll-lib-file=/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+ll-config-file=models/tracker_config.yml
+# Prevent deepstream from storing past tracking metadata
+enable-past-frame=0
+enable-batch-process=1
+
+# IOU Tracker Settings optimized for RTX 4070 and DeepStream 7.1
+display-tracking-id=1
+tracking-surface-stream-id=0
+tracking-mode=1
+iou-threshold=0.5
+min-frames-pending=5
+min-boxes-in-track=2
+max-frames-absent=30
+enable-shadow-tracking=1
+past-frame-min-forward-iou=0.0
+past-frame-min-backward-iou=0.0
+smart-frame-copy-object-meta=0
+
+[osd]
+enable=1
+gpu-id=0
+border-width=2
+text-size=15
+text-color=1;1;1;1;
+text-bg-color=0.3;0.3;0.3;1
+font=Arial
+show-clock=0
+clock-x-offset=800
+clock-y-offset=820
+clock-text-size=12
+clock-color=1;0;0;0
+nvbuf-memory-type=0
+
+# Add NVIDIA hardware encoder settings optimized for RTX 4070 with DeepStream 7.1
+[sink0]
+enable=1
+#Type - 1=FakeSink 2=EglSink 3=File
+type=3
+sync=0
+#1=mp4 2=mkv
+container=1
+#encoder type 1=h264 2=h265
+codec=1
+#bitrate
+bitrate=4000000
+#H264 Profile - 0=Baseline 2=Main 4=High
+#H265 Profile - 0=Main 1=Main10
+profile=4
+# Enable MUX recording to avoid GOP issues on certain players
+muxer=2
+# Use hardware accelerated encoder for NVIDIA GPU
+enc-type=1
+# Optimized settings for RTX 4070
+cuda-memory-type=0
+gpu-id=0
+# Sets encoding preset (higher number = better quality, more GPU usage)
+enc-preset=4
+# 0 = VBR, 1 = CBR
+rate-control=1
+# Use keyframe interval of 30 (1 second with 30 fps)
+iframe-interval=30
+# Set IDR interval to -1 (use iframe-interval)
+idr-interval=-1
+# Set quality level
+qos=1
+# Set low latency (good for real-time)
+low-latency=1
+# Maximize quality 
+quality-level=5
+# Set maximum queue size for buffering
+max-queue=64
+# Enable hardware encoding path
+hw-preset=2
+
+# Add config for RTX 4070 specific tuning with DeepStream 7.1
+[nvidia-rtx]
+force-gpuid=0
+enable-gpu-stats=1
+use-cuda-unified-memory=0
+# Enable hardware pre-processor for optimal performance
+enable-hw-pre-processor=1
+# FP16 inference mode
+enable-fp16=1
+# Use cuda kernels for performance
+use-cuda-kernels=1
+# Multi-Stream support for the RTX 4070
+enable-multi-stream=1 
+# Hardware encoder buffer tuning for real-time operation
+encoder-buffer-pool-size=5 
+# DeepStream 7.1 specific settings
+enable-tensor-optimization=1
+enable-dla-acceleration=0 
